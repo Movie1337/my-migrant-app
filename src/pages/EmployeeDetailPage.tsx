@@ -4,17 +4,10 @@ import EmployeeCard from '../components/EmployeeCard';
 import { useEmployeesStore } from '../store/useEmployeesStore';
 
 export default function EmployeeDetailPage() {
-  const { id } = useParams();
-  const { getEmployeeById, isLoading } = useEmployeesStore();
-  const employee = id ? getEmployeeById(id) : undefined;
-
-  if (isLoading) {
-    return <Spin />;
-  }
-
-  if (!employee) {
-    return <Empty description="Сотрудник не найден" />;
-  }
-
+  const { tn } = useParams();
+  const { getEmployeeByTn, isLoading } = useEmployeesStore();
+  const employee = tn ? getEmployeeByTn(tn) : undefined;
+  if (isLoading) return <Spin />;
+  if (!employee) return <Empty description="Сотрудник не найден. Откройте карточку из текущего списка." />;
   return <EmployeeCard employee={employee} />;
 }

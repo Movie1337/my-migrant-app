@@ -1,9 +1,9 @@
 import { Tag } from 'antd';
-import { DeadlineStatus, EmploymentStatus } from '../types';
-import { employmentStatusLabels } from '../utils/dictionaries';
+import { DeadlineStatus } from '../types';
+import { formatEmploymentStatus } from '../utils/dictionaries';
 
 interface StatusBadgeProps {
-  status: DeadlineStatus | EmploymentStatus;
+  status: DeadlineStatus | string;
   text?: string;
 }
 
@@ -13,19 +13,16 @@ const colors: Record<string, string> = {
   ok: 'green',
   unknown: 'default',
   active: 'green',
-  dismissed: 'default',
-  onboarding: 'blue',
-  suspended: 'orange'
+  fired: 'default'
 };
 
-const labels: Record<string, string> = {
+const labels: Record<DeadlineStatus, string> = {
   expired: 'Просрочено',
   warning: 'Скоро срок',
   ok: 'Норма',
-  unknown: 'Нет даты',
-  ...employmentStatusLabels
+  unknown: 'Не указано'
 };
 
 export default function StatusBadge({ status, text }: StatusBadgeProps) {
-  return <Tag color={colors[status]}>{text ?? labels[status]}</Tag>;
+  return <Tag color={colors[status]}>{text ?? (status in labels ? labels[status as DeadlineStatus] : formatEmploymentStatus(status))}</Tag>;
 }

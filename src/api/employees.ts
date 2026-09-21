@@ -1,30 +1,26 @@
+import { Employee, EmployeeFilters, EmployeesResponse } from '../types';
 import { httpClient } from './http';
-import { ApiResponse, Employee } from '../types';
-import { normalizeEmployee } from '../utils/normalizers';
 
-export async function fetchEmployees(): Promise<Employee[]> {
-  const response = await httpClient.get<ApiResponse<unknown[]>>('/Получить');
-  const payload = response.data;
+const oneCFilterMapping: Partial<Record<keyof EmployeeFilters, string>> = {
+  fullName: 'fullName'
+};
 
-  if (payload.status !== 'ok' || !Array.isArray(payload.data)) {
-    throw new Error(payload.message ?? '1С вернула некорректный список сотрудников');
+function buildConfirmedParams(filters: EmployeeFilters = {}) {
+  return Object.entries(oneCFilterMapping).reduce<Record<string, string>>((params, [key, apiKey]) => {
+    const value = filters[key as keyof EmployeeFilters];
+    if (apiKey && typeof value === 'string' && value.trim()) params[apiKey] = value.trim();
+    return params;
+  }, {});
+}
+
+export const employeesApi = {
+  async getEmployees(filters?: EmployeeFilters): Promise<Employee[]> {
+    const response = await httpClient.get<EmployeesResponse>('/employees', {
+      params: buildConfirmedParams(filters)
+    });
+    if (response.data.status !== 'ok' || !Array.isArray(response.data.data)) {
+      throw new Error(response.data.message ?? '1С вернула некорректный список сотрудников');
+    }
+    return response.data.data;
   }
-
-  return payload.data.map(normalizeEmployee);
-}
-
-export async function updateEmployee(employee: Employee): Promise<Employee> {
-  const response = await httpClient.put<ApiResponse<unknown>>('/Отправить', employee);
-  const payload = response.data;
-
-  if (payload.status !== 'ok') {
-    throw new Error(payload.message ?? 'Не удалось обновить сотрудника');
-  }
-
-  return normalizeEmployee(payload.data ?? employee);
-}
-
-export async function fetchStorageIdentifier(): Promise<unknown> {
-  const response = await httpClient.get<ApiResponse<unknown>>('/ХранилищеИдентификатор');
-  return response.data.data;
-}
+};

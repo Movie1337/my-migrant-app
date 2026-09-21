@@ -54,7 +54,10 @@ export function getTextColumnSearch<T extends object>(
 export default function DataTable<T extends object>({ columns, data, ...props }: DataTableProps<T>) {
   return (
     <Table<T>
-      rowKey={(record) => String((record as { id?: string }).id)}
+      rowKey={(record) => {
+        const key = record as { id?: string; tn?: string };
+        return key.id ?? key.tn ?? JSON.stringify(record);
+      }}
       columns={columns}
       dataSource={data}
       size="middle"

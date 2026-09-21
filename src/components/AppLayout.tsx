@@ -22,10 +22,12 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const loadEmployees = useEmployeesStore((state) => state.loadEmployees);
+  const loadObjects = useEmployeesStore((state) => state.loadObjects);
 
   useEffect(() => {
     void loadEmployees();
-  }, [loadEmployees]);
+    void loadObjects();
+  }, [loadEmployees, loadObjects]);
 
   return (
     <Layout className="app-shell">

@@ -1,46 +1,56 @@
 import { create } from 'zustand';
-import { fetchEmployees, updateEmployee } from '../api/employees';
-import { Employee } from '../types';
-import { createDemoEmployees } from '../utils/demoData';
+import { employeesApi } from '../api/employees';
+import { objectsApi } from '../api/objects';
+import { Employee, EmployeeFilters } from '../types';
 
 interface EmployeesState {
   employees: Employee[];
+  objects: string[];
   isLoading: boolean;
+  isObjectsLoading: boolean;
   error: string | null;
-  loadEmployees: () => Promise<void>;
-  saveEmployee: (employee: Employee) => Promise<void>;
-  getEmployeeById: (id: string) => Employee | undefined;
+  objectsError: string | null;
+  loadEmployees: (filters?: EmployeeFilters) => Promise<void>;
+  loadObjects: () => Promise<void>;
+  getEmployeeByTn: (tn: string) => Employee | undefined;
 }
 
 export const useEmployeesStore = create<EmployeesState>((set, get) => ({
   employees: [],
+  objects: [],
   isLoading: false,
+  isObjectsLoading: false,
   error: null,
+  objectsError: null,
 
-  loadEmployees: async () => {
+  loadEmployees: async (filters) => {
     set({ isLoading: true, error: null });
-
     try {
-      const employees = await fetchEmployees();
+      const employees = await employeesApi.getEmployees(filters);
       set({ employees, isLoading: false });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Не удалось загрузить сотрудников';
-
       set({
-        employees: createDemoEmployees(),
+        employees: [],
         isLoading: false,
-        error: `${message}. Показаны демо-данные для проверки интерфейса.`
+        error: error instanceof Error ? error.message : 'Не удалось получить данные из 1С'
       });
     }
   },
 
-  saveEmployee: async (employee) => {
-    const updated = await updateEmployee(employee);
-
-    set({
-      employees: get().employees.map((item) => (item.id === updated.id ? updated : item))
-    });
+  loadObjects: async () => {
+    if (get().isObjectsLoading) return;
+    set({ isObjectsLoading: true, objectsError: null });
+    try {
+      const objects = await objectsApi.getObjects();
+      set({ objects, isObjectsLoading: false });
+    } catch (error) {
+      set({
+        objects: [],
+        isObjectsLoading: false,
+        objectsError: error instanceof Error ? error.message : 'Не удалось получить список объектов'
+      });
+    }
   },
 
-  getEmployeeById: (id) => get().employees.find((employee) => employee.id === id)
+  getEmployeeByTn: (tn) => get().employees.find((employee) => employee.tn === tn)
 }));

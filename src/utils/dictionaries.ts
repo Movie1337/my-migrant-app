@@ -1,19 +1,15 @@
-import { DocumentType, EmploymentStatus } from '../types';
+import { DocumentType } from '../types';
 
-export const employmentStatusLabels: Record<EmploymentStatus, string> = {
+export const employmentStatusLabels: Record<string, string> = {
   active: 'Работает',
-  dismissed: 'Уволен',
-  onboarding: 'Оформление',
-  suspended: 'Пауза'
+  fired: 'Уволен'
 };
 
 export const documentTypeLabels: Record<DocumentType, string> = {
   patent: 'Патент',
-  check: 'Чек',
-  registration: 'Регистрация',
-  medicalBook: 'Медкнижка',
-  passport: 'Паспорт',
-  migrationCard: 'Миграционная карта',
-  contract: 'Договор',
-  other: 'Документ'
+  registration: 'Регистрация'
 };
+
+export function formatEmploymentStatus(status: string): string {
+  return employmentStatusLabels[status] ?? status ?? 'Не указан';
+}

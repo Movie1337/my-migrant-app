@@ -1,82 +1,31 @@
-import { Button, Space, Typography } from 'antd';
+import { Alert, Button, Empty, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import DataTable, { getTextColumnSearch } from '../components/DataTable';
+import DataTable from '../components/DataTable';
 import { useEmployeesStore } from '../store/useEmployeesStore';
 import { Client } from '../types';
 
 export default function ClientsPage() {
   const navigate = useNavigate();
-  const employees = useEmployeesStore((state) => state.employees);
-  const clients = useMemo<Client[]>(() => {
-    const map = new Map<string, Client>();
-
-    employees.forEach((employee) => {
-      const id = employee.clientId ?? employee.clientName ?? 'unknown';
-      const current = map.get(id);
-
-      map.set(id, {
-        id,
-        name: employee.clientName ?? 'Без клиента',
-        address: employee.objectName,
-        foreman: employee.foreman,
-        activeEmployees:
-          (current?.activeEmployees ?? 0) + (employee.status === 'active' ? 1 : 0)
-      });
-    });
-
-    return Array.from(map.values());
-  }, [employees]);
+  const { employees, objects, isObjectsLoading, objectsError, loadObjects } = useEmployeesStore();
+  const clients = useMemo<Client[]>(() => objects.map((name) => ({
+    id: name,
+    name,
+    activeEmployees: employees.filter((employee) => employee.object === name && employee.status === 'active').length
+  })), [employees, objects]);
 
   const columns: ColumnsType<Client> = [
-    {
-      title: 'Клиент / объект',
-      dataIndex: 'name',
-      width: 260,
-      sorter: (a, b) => a.name.localeCompare(b.name),
-      ...getTextColumnSearch<Client>('name', 'Клиент')
-    },
-    {
-      title: 'Объект',
-      dataIndex: 'address',
-      width: 280,
-      ...getTextColumnSearch<Client>('address', 'Объект')
-    },
-    {
-      title: 'Бригадир',
-      dataIndex: 'foreman',
-      width: 180,
-      ...getTextColumnSearch<Client>('foreman', 'Бригадир')
-    },
-    {
-      title: 'Работает',
-      dataIndex: 'activeEmployees',
-      width: 120,
-      sorter: (a, b) => (a.activeEmployees ?? 0) - (b.activeEmployees ?? 0)
-    },
-    {
-      title: 'Действия',
-      width: 170,
-      render: (_, client) => (
-        <Button type="link" onClick={() => navigate(`/employees?client=${client.id}`)}>
-          Сотрудники объекта
-        </Button>
-      )
-    }
+    { title: 'Объект', dataIndex: 'name', width: 440, sorter: (a, b) => a.name.localeCompare(b.name) },
+    { title: 'Работает', dataIndex: 'activeEmployees', width: 160, sorter: (a, b) => a.activeEmployees - b.activeEmployees },
+    { title: 'Действия', width: 170, render: (_, client) => <Button type="link" onClick={() => navigate(`/employees?object=${encodeURIComponent(client.id)}`)}>Сотрудники объекта</Button> }
   ];
 
-  return (
-    <div className="page-stack">
-      <div className="page-title">
-        <Space direction="vertical" size={0}>
-          <Typography.Text type="secondary">Объекты, стройки и бригадиры</Typography.Text>
-          <Typography.Title level={2}>Клиенты / Объекты</Typography.Title>
-        </Space>
-      </div>
-      <div className="panel table-panel">
-        <DataTable<Client> columns={columns} data={clients} />
-      </div>
+  return <div className="page-stack">
+    <div className="page-title"><div><Typography.Text type="secondary">Справочник объектов из 1С</Typography.Text><Typography.Title level={2}>Клиенты / Объекты</Typography.Title></div></div>
+    {objectsError && <Alert type="error" showIcon message="Не удалось получить список объектов" description={objectsError} action={<Button size="small" onClick={() => void loadObjects()}>Повторить</Button>} />}
+    <div className="panel table-panel">
+      {objectsError && !isObjectsLoading ? <Empty description="Список объектов недоступен" /> : <DataTable<Client> columns={columns} data={clients} loading={isObjectsLoading} locale={{ emptyText: 'Объекты не найдены' }} />}
     </div>
-  );
+  </div>;
 }

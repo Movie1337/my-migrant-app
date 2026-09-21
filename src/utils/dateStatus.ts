@@ -2,60 +2,32 @@ import dayjs from 'dayjs';
 import { DeadlineStatus } from '../types';
 
 export function getDaysLeft(date?: string | null): number | null {
-  if (!date) {
-    return null;
-  }
-
+  if (!date) return null;
   const parsed = dayjs(date);
-
-  if (!parsed.isValid()) {
-    return null;
-  }
-
-  return parsed.startOf('day').diff(dayjs().startOf('day'), 'day');
+  return parsed.isValid() ? parsed.startOf('day').diff(dayjs().startOf('day'), 'day') : null;
 }
 
-export function getDeadlineStatus(date?: string | null): DeadlineStatus {
-  const daysLeft = getDaysLeft(date);
+export function getDeadlineStatus(date?: string | null, apiDaysLeft?: number): DeadlineStatus {
+  if (!date) return 'unknown';
+  const calculatedDays = getDaysLeft(date);
+  if (calculatedDays === null || calculatedDays < 0) return 'expired';
 
-  if (daysLeft === null) {
-    return 'unknown';
-  }
-
-  if (daysLeft < 0) {
-    return 'expired';
-  }
-
-  if (daysLeft <= 7) {
-    return 'warning';
-  }
-
-  return 'ok';
+  const daysLeft = typeof apiDaysLeft === 'number' && apiDaysLeft >= 0 ? apiDaysLeft : calculatedDays;
+  return daysLeft <= 7 ? 'warning' : 'ok';
 }
 
 export function formatDate(date?: string | null): string {
-  if (!date) {
-    return '—';
-  }
-
+  if (!date) return 'Не указано';
   const parsed = dayjs(date);
-  return parsed.isValid() ? parsed.format('DD.MM.YYYY') : '—';
+  return parsed.isValid() ? parsed.format('DD.MM.YYYY') : 'Не указано';
 }
 
-export function formatDaysLeft(date?: string | null): string {
-  const daysLeft = getDaysLeft(date);
+export function formatDaysLeft(date?: string | null, apiDaysLeft?: number): string {
+  if (!date) return 'Не указано';
+  if (getDeadlineStatus(date, apiDaysLeft) === 'expired') return 'Просрочен';
 
-  if (daysLeft === null) {
-    return 'нет даты';
-  }
-
-  if (daysLeft < 0) {
-    return `просрочено ${Math.abs(daysLeft)} дн.`;
-  }
-
-  if (daysLeft === 0) {
-    return 'сегодня';
-  }
-
-  return `${daysLeft} дн.`;
+  const daysLeft = typeof apiDaysLeft === 'number' && apiDaysLeft >= 0 ? apiDaysLeft : getDaysLeft(date);
+  if (daysLeft === null) return 'Не указано';
+  if (daysLeft === 0) return 'Сегодня';
+  return `${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'}`;
 }
